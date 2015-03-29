@@ -1,0 +1,34 @@
+{
+  "name": "og-file-explorer",
+  "main": "og-file-explorer.js",
+  "version": "0.0.1",
+  "authors": [
+    "Ogires <sergio.bonet@outlook.com>"
+  ],
+  "description": "Un servicio de explorador de ficheros para utilizar con ionic framework.",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "file",
+    "explorer",
+    "fileexplorer",    
+    "ionic",
+    "cordova",
+    "phonegap",
+    "angularjs"
+  ],
+  "license": "MIT",
+  "homepage": "http://ionicframework.es",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "app/bower_components",
+    "test",
+    "tests"
+  ],
+    "dependencies": {
+      "ionic" : "1.0.0-rc.1" 
+  }
+}
