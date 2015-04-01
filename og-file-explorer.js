@@ -10,7 +10,7 @@
             if (fs != null) {
                 deferred.resolve(fs);
             } else {
-                $window.requestFileSystem($window.PERSISTENT, 0, function (fs) { deferred.resolve(fs) }, function () { deferred.reject() });
+                $window.requestFileSystem($window.PERSISTENT, 0, function (fs) { deferred.resolve(fs) }, function (error) { deferred.reject(error) });
             }
             return deferred.promise;
         }
@@ -31,7 +31,7 @@
         }
 
     }])
-    .factory('ogFileExplorerService', ["$ionicPlatform", "$ionicModal", "$ionicScrollDelegate", "ogFileSystem", "$q", "$rootScope", "$timeout", "$ionicLoading",
+    .factory('ogFileExplorer', ["$ionicPlatform", "$ionicModal", "$ionicScrollDelegate", "ogFileSystem", "$q", "$rootScope", "$timeout", "$ionicLoading",
 
     function ($ionicPlatform, $ionicModal, $ionicScrollDelegate, ogFileSystem, $q, $rootScope, $timeout, $ionicLoading) {
 
@@ -44,7 +44,7 @@
                     "directory": "ion-ios-folder",
                     "default": "ion-document"
                 },
-                filtro : ["*"]
+                filter : ["*"]
             };
 
         $ionicPlatform.onHardwareBackButton(function (event) {
@@ -77,7 +77,7 @@
             if (modal) {
                 q.resolve(modal);
             } else {
-                $ionicModal.fromTemplateUrl(options.template || "template/ogFileExplorer", {
+                $ionicModal.fromTemplateUrl(options.templateUrl || "template/ogFileExplorer", {
                     scope: options.scope,
                     hardwareBackButtonClose: false
                 }).then(function (elModal) {
@@ -87,28 +87,29 @@
             }
 
             return q.promise;
-        }
+        }        
+
 
         servicio.open = function (fileExplorerOptions) {
 
             var options = angular.extend({}, defaultOptions, fileExplorerOptions);
             var resultdefered = $q.defer();
             var scope = (fileExplorerOptions.scope || $rootScope).$new();
-            scope.$on("$destroy", function () { console.log("Destroy del scope") })
+            //scope.$on("$destroy", function () { console.log("Destroy del scope") })
             scope.currentDir = null;
             scope.entries = [];
             scope.entriesHistory = [];
             scope.selectedFiles = [];
-            scope.listarDirectorio = listarDirectorio;
-            scope.seleccionar = seleccionar;
-            scope.aceptar = aceptar;
-            scope.cancelar = cancelar;
-            scope.obtenerSeleccion = obtenerSeleccion;
+            scope.listDirectory = listDirectory;
+            scope.selectEntry = selectEntry;
+            scope.accept = accept;
+            scope.cancel = cancel;
+            scope.getSelectedEntries = getSelectedEntries;
             scope.goBack = goBack;
             scope.canGoBack = canGoBack;
-            scope.seleccionarClase = seleccionarClase;
+            scope.getCssClass = getCssClass;
             scope.options = options;
-            scope.filtrarExtensiones = filtrarExtensiones;
+            scope.filterByExtensions = filterByExtensions;
 
             //La instancia del explorador que vamos a devolver para interactuar
             var fileExplorerInstance = {
@@ -117,10 +118,10 @@
                 modal: modal
             }
 
-            var obtenerFileSystemYModalPromise = $q.all([getFileSystemPromise(), getModalPromise({ scope: scope })]);
+            var getFileSystemAndModalPromise = $q.all([getFileSystemPromise(), getModalPromise({ scope: scope })]);
 
-            obtenerFileSystemYModalPromise.then(function (fsAndModal) {
-                seleccionar(fs.root);
+            getFileSystemAndModalPromise.then(function (fsAndModal) {
+                selectEntry(fs.root);
                 console.log(fsAndModal);
                 modal.show();
             });
@@ -129,11 +130,11 @@
                 return scope.entriesHistory.length > 0;
             }
 
-            function listarDirectorio(directoryEntry) {
+            function listDirectory(directoryEntry) {
                 $ionicLoading.show({ template: "loading..." });
                 ogFileSystem.listDirectory(directoryEntry).then(function (entries) {
                     scope.entries.splice(0, scope.entries.length);
-                    var temp = entries.filter(filtrarExtensiones);
+                    var temp = entries.filter(filterByExtensions);
                     for (var i = 0; i < temp.length; i++) {
                         temp[i].isSelected = false;
                     }
@@ -143,18 +144,18 @@
                 });
             }
 
-            function seleccionar(entry) {
+            function selectEntry(entry) {
                 if (entry.isDirectory) {
                     if (scope.currentDir)
                         scope.entriesHistory.push(scope.currentDir);
                     scope.currentDir = entry;
-                    listarDirectorio(entry);
+                    listDirectory(entry);
                 } else {
                     entry.isSelected = !entry.isSelected;
                 }
             }
 
-            function obtenerSeleccion() {
+            function getSelectedEntries() {
                 return scope.entries.filter(function (elemento, indice, arr) {
                     return elemento.isFile && elemento.isSelected;
                 })
@@ -164,31 +165,31 @@
                 if (scope.entriesHistory.length) {
                     scope.selectedFiles.splice(0, scope.selectedFiles.length);
                     scope.currentDir = scope.entriesHistory.pop();
-                    scope.listarDirectorio(scope.currentDir);
+                    scope.listDirectory(scope.currentDir);
                 }
             }
 
-            function aceptar() {
+            function accept() {
                 console.log("aceptar");
-                resultdefered.resolve(scope.obtenerSeleccion());
+                resultdefered.resolve(scope.getSelectedEntries());
                 modal.remove();
                 modal = null;
                 scope.$destroy();
             }
 
-            function cancelar() {
+            function cancel() {
                 resultdefered.reject();
                 modal.remove();
                 modal = null;
                 scope.$destroy();
             }
 
-            function seleccionarClase(entry) {
+            function getCssClass(entry) {
 
                 if (entry.isDirectory)
                     return scope.options.icons["directory"];
 
-                var extension = entry.name.split('.').pop();
+                var extension = getExtension( entry.name);
                 console.log(extension + " " + scope.options.icons[extension]);
                 if (scope.options.icons[extension])
                     return scope.options.icons[extension];
@@ -197,17 +198,18 @@
 
             }
 
-            function obtenerExtension(name) {
+            function getExtension(name) {
                 return name.split('.').pop();
             }
 
-            function filtrarExtensiones(entry) {
+            function filterByExtensions(entry) {
 
-                if (entry.isDirectory || !scope.options.filtro || scope.options.filtro=="*")
+                if (entry.isDirectory || !scope.options.filter || scope.options.filter=="*")
                     return true;
-                var extension = obtenerExtension(entry.name);
 
-                return scope.options.filtro.indexOf(extension) > -1;
+                var extension = getExtension(entry.name);
+
+                return scope.options.filter.indexOf(extension) > -1;
 
             }
 
@@ -229,8 +231,8 @@
       	    + "</ion-header-bar>"
             + "<ion-content>"
                 + "<div class='list'>"
-                    + "<a ng-repeat=\"entry in entries  |  orderBy: ['isFile','name']\" class='item item-icon-left item-text-wrap' on-tap='seleccionar(entry)'>"
-	                    + "<i class'icon entry' ng-class=\"::seleccionarClase(entry)\"></i>"
+                    + "<a ng-repeat=\"entry in entries  |  orderBy: ['isFile','name']\" class='item item-icon-left item-text-wrap' on-tap='selectEntry(entry)'>"
+	                    + "<i class'icon entry' ng-class=\"::getCssClass(entry)\"></i>"
 	                    + "<label class=\"checkbox\">"
                         + "{{entry.name}}"
                         + "</label>"
@@ -240,8 +242,8 @@
             + "</ion-content>"
             + "<ion-footer-bar ng-class=\"bar-assertive\">"
     	        + "<div class=\"button-bar\">"
-    		        + "<button class=\"button button-positive\" on-tap=\"aceptar()\">Aceptar</button>"
-    		        + "<button class=\"button button-assertive\" on-tap=\"cancelar()\">Cancelar</button>"
+    		        + "<button class=\"button button-positive button-large\" on-tap=\"accept()\">Aceptar</button>"
+    		        + "<button class=\"button button-assertive button-large\" on-tap=\"cancel()\">Cancelar</button>"
     	        + "</div>"
             + "</ion-footer-bar>"
             + "</ion-modal-view>")
