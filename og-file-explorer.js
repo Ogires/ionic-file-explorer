@@ -39,6 +39,7 @@
             fs = null,
             modal = null,
             defaultOptions = {
+                templateUrl : "template/ogFileExplorer",
                 icons: {
                     "mp4": "ion-videocamera",
                     "directory": "ion-ios-folder",
@@ -72,19 +73,31 @@
         }
 
         function getModalPromise(options) {
-            var q = $q.defer();
+            var q = $q.defer(),
+                modalPromise = null;
 
             if (modal) {
                 q.resolve(modal);
-            } else {
-                $ionicModal.fromTemplateUrl(options.templateUrl || "template/ogFileExplorer", {
+            } else if (!options.template) {
+                console.log("fromTemplateUrl : " + options.templateUrl);
+                modalPromise = $ionicModal.fromTemplateUrl(options.templateUrl , {
                     scope: options.scope,
                     hardwareBackButtonClose: false
-                }).then(function (elModal) {
-                    modal = elModal;
-                    q.resolve(modal);
                 });
             }
+            else {
+                console.log("fromTemplate");
+                modalPromise = $ionicModal.fromTemplate(options.template, {
+                    scope: options.scope,
+                    hardwareBackButtonClose: false
+                });
+            }
+
+            modalPromise.then(function (elModal) {
+                modal = elModal;
+                q.resolve(modal);
+            });
+
 
             return q.promise;
         }        
@@ -92,10 +105,10 @@
 
         servicio.open = function (fileExplorerOptions) {
 
-            var options = angular.extend({}, defaultOptions, fileExplorerOptions);
+            var options = angular.extend({},  defaultOptions, fileExplorerOptions);
             var resultdefered = $q.defer();
-            var scope = (fileExplorerOptions.scope || $rootScope).$new();
-            //scope.$on("$destroy", function () { console.log("Destroy del scope") })
+            options.scope = (options.scope || $rootScope).$new();
+            var scope = options.scope;
             scope.currentDir = null;
             scope.entries = [];
             scope.entriesHistory = [];
@@ -118,7 +131,7 @@
                 modal: modal
             }
 
-            var getFileSystemAndModalPromise = $q.all([getFileSystemPromise(), getModalPromise({ scope: scope })]);
+            var getFileSystemAndModalPromise = $q.all([getFileSystemPromise(), getModalPromise(options)]);
 
             getFileSystemAndModalPromise.then(function (fsAndModal) {
                 selectEntry(fs.root);
@@ -226,8 +239,7 @@
             "<ion-modal-view has-footer has-header>"
                 + "<ion-header-bar class='bar-assertive'>"
     	        + "<button class='button button-icon icon ion-arrow-left-c button-clear' on-tap='goBack()' ></button>"
-                + "<h1 class='title'>{{currentDir.fullPath}}</h1>"
-      	        + "<button class='button button-icon icon ion-navicon'></button>"
+                + "<h1 class='title'>{{currentDir.fullPath}}</h1>"      	        
       	    + "</ion-header-bar>"
             + "<ion-content>"
                 + "<div class='list'>"
