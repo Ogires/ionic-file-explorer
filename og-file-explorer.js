@@ -1,5 +1,3 @@
-/// <reference path="../lib/angular/angular.js" />
-
 (function () {
 
     angular.module("ogUtils", [])
