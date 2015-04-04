@@ -7,6 +7,7 @@ Es un servicio de Angularjs para utlizar exclusivamente en aplicaciones desarrol
 ## Instalacion
 
 - Para funcionar necesita ionic y el plugin cordova.plugin.file
+
 - Incluye el fichero og-file-explorer.js después de ionic
 	`<script src="og-file-explorer.js"></script>`
 
@@ -15,6 +16,9 @@ Es un servicio de Angularjs para utlizar exclusivamente en aplicaciones desarrol
 
 - En tu Controller declara una dependencia del servicio 'ogFileExplorer'
 	`myApp.controller("myController",function(ogFileExplorer));`
+
+- Puede instalarse mediante bower:
+  `bower install og-file-explorer`
 
 ## Uso
 
