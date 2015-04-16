@@ -1,7 +1,7 @@
 {
   "name": "og-file-explorer",
   "main": "og-file-explorer.js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "authors": [
     "Ogires <sergio.bonet@outlook.com>"
   ],

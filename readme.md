@@ -18,7 +18,7 @@ Es un servicio de Angularjs para utlizar exclusivamente en aplicaciones desarrol
 	`myApp.controller("myController",function(ogFileExplorer));`
 
 - Puede instalarse mediante bower:
-  `bower install og-file-explorer`
+  `bower install ionic-file-explorer`
 
 ## Uso
 
